@@ -2,7 +2,7 @@
 
 Copyright © 2026. Todos os direitos reservados.
 
-O titular concede a pessoas físicas uma licença gratuita, não exclusiva e revogável em caso de descumprimento destes termos para baixar o código deste repositório, consultá-lo, fazer cópias necessárias à instalação em seus próprios dispositivos e executar o aplicativo para fins pessoais e não comerciais.
+O titular concede a pessoas físicas uma licença gratuita, não exclusiva e revogável em caso de descumprimento destes termos para baixar o código deste repositório, consultá-lo, fazer cópias necessárias à instalação em seus próprios dispositivos ou em repositório privado para implantação pessoal e executar o aplicativo para fins pessoais e não comerciais.
 
 É permitido preencher arquivos de configuração locais e cadastrar dados próprios no aplicativo. Esta permissão não autoriza alterar o código-fonte do projeto.
 
