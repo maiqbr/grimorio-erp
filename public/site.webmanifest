@@ -1,0 +1,22 @@
+{
+  "name": "Grimório",
+  "short_name": "Grimório",
+  "description": "Seu espaço de organização, projetos e comunicação.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#151210",
+  "theme_color": "#151210",
+  "icons": [
+    {
+      "src": "/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+# Copy to .dev.vars (ignored). Never use VITE_ for secrets.
+RESEND_API_KEY=
+# Optional: private ICS feed URL for Outlook calendar sync.
+OUTLOOK_ICS_URL=
+# Optional: 32-byte random key as 64 hexadecimal characters for the password vault.
+VAULT_ENCRYPTION_KEY=

@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "grimorio-local",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-09-01",
+  "vars": {
+    "LOCAL_DEVELOPMENT": "true",
+    "APP_ORIGIN": "http://127.0.0.1:5173",
+    "MAIL_ENABLED": "false",
+    "MAIL_DOMAIN": "example.com",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "grimorio-local",
+      "database_id": "local-only",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "r2_buckets": [{ "binding": "FILES", "bucket_name": "grimorio-local" }],
+}
