@@ -14,6 +14,7 @@ import {
   vaultInputSchema,
 } from "./validation";
 import { decryptVaultItem, encryptVaultItem, importVaultKey } from "./vault";
+import { calendarDate, icsDate, icsProperty, wallDate } from "./ical-time";
 import { nextDue } from "../src/lib";
 import {
   defaultColumns,
@@ -143,7 +144,7 @@ type OutlookEvent = {
   endTime: string;
   description: string;
 };
-const outlookParserVersion = 3;
+const outlookParserVersion = 4;
 function shortId(value: string) {
   let hash = 2166136261;
   for (let index = 0; index < value.length; index += 1) {
@@ -151,25 +152,6 @@ function shortId(value: string) {
     hash = Math.imul(hash, 16777619);
   }
   return (hash >>> 0).toString(36);
-}
-function icsDate(raw: string) {
-  const match = raw.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2}))?/);
-  if (!match) return null;
-  const [, year, month, day, hour = "00", minute = "00"] = match;
-  return new Date(
-    Number(year),
-    Number(month) - 1,
-    Number(day),
-    Number(hour),
-    Number(minute),
-  );
-}
-function eventDate(date: Date) {
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return {
-    date: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
-    time: `${pad(date.getHours())}:${pad(date.getMinutes())}`,
-  };
 }
 function recurringDates(
   start: Date,
@@ -217,28 +199,29 @@ function recurringDates(
   };
   if (frequency === "DAILY" || frequency === "WEEKLY") {
     while (cursor <= end && occurrence < countLimit) {
-      const daysSinceStart = Math.floor(
+      const daysSinceStart = Math.round(
         (cursor.getTime() - start.getTime()) / 86_400_000,
       );
       const weeklyMatch =
         frequency !== "WEEKLY" ||
         (Math.floor(daysSinceStart / 7) % interval === 0 &&
           (weekdays.length
-            ? weekdays.includes(cursor.getDay())
-            : cursor.getDay() === start.getDay()));
+            ? weekdays.includes(cursor.getUTCDay())
+            : cursor.getUTCDay() === start.getUTCDay()));
       if (
         (frequency === "DAILY" && daysSinceStart % interval === 0) ||
         weeklyMatch
       )
         push(cursor);
-      cursor.setDate(cursor.getDate() + 1);
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
     return dates;
   }
   while (cursor <= end && occurrence < countLimit) {
     push(cursor);
-    if (frequency === "MONTHLY") cursor.setMonth(cursor.getMonth() + interval);
-    else cursor.setFullYear(cursor.getFullYear() + interval);
+    if (frequency === "MONTHLY")
+      cursor.setUTCMonth(cursor.getUTCMonth() + interval);
+    else cursor.setUTCFullYear(cursor.getUTCFullYear() + interval);
   }
   return dates;
 }
@@ -307,36 +290,36 @@ async function syncOutlook(env: Env) {
         ?.replace(/\\n/g, " ")
         .trim();
     const uid = value("UID"),
-      start = value("DTSTART"),
-      end = value("DTEND"),
+      start = icsProperty(block, "DTSTART"),
+      end = icsProperty(block, "DTEND"),
       title = value("SUMMARY");
     if (!uid || !start || !title) return [];
-    const firstOccurrence = icsDate(start);
+    const firstOccurrence = icsDate(start.value);
     if (!firstOccurrence) return [];
     const excluded = new Set(
       [...block.matchAll(/^EXDATE(?:;[^:]*)?:(.*)$/gm)].flatMap((match) =>
         match[1]
           .split(",")
-          .map(
-            (date) =>
-              eventDate(icsDate(date) || firstOccurrence).date +
-              eventDate(icsDate(date) || firstOccurrence).time,
-          ),
+          .map((date) => icsDate(date))
+          .filter((date): date is Date => !!date)
+          .map((date) => wallDate(date).date + wallDate(date).time),
       ),
     );
-    const endTime =
-      end && icsDate(end)
-        ? eventDate(icsDate(end)!).time
-        : eventDate(firstOccurrence).time;
+    const endOccurrence = end && icsDate(end.value);
+    const duration = endOccurrence
+      ? endOccurrence.getTime() - firstOccurrence.getTime()
+      : 0;
     return recurringDates(firstOccurrence, value("RRULE"), rangeStart, rangeEnd)
       .filter(
         (occurrence) =>
-          !excluded.has(
-            eventDate(occurrence).date + eventDate(occurrence).time,
-          ),
+          !excluded.has(wallDate(occurrence).date + wallDate(occurrence).time),
       )
       .map((occurrence): OutlookEvent => {
-        const dateTime = eventDate(occurrence);
+        const dateTime = calendarDate(occurrence, start);
+        const endTime = calendarDate(
+          new Date(occurrence.getTime() + duration),
+          end || start,
+        ).time;
         const occurrenceId = `${shortId(uid)}_${dateTime.date.replaceAll("-", "")}_${dateTime.time.replace(":", "")}`;
         return {
           id: `outlook_${occurrenceId}`,
@@ -384,7 +367,8 @@ async function syncOutlook(env: Env) {
       }),
     ),
   );
-  if (statements.length) await env.DB.batch(statements);
+  for (let index = 0; index < statements.length; index += 80)
+    await env.DB.batch(statements.slice(index, index + 80));
   return {
     count: uniqueEvents.length,
     changed: statements.length - 1,
@@ -686,10 +670,7 @@ app.get("/api/app-icon/:size", async (c) => {
         },
       });
   }
-  return c.redirect(
-    "/app-icon.svg",
-    302,
-  );
+  return c.redirect("/app-icon.svg", 302);
 });
 app.get("/api/site.webmanifest", async (c) => {
   const settings = await preferences(c.env);
@@ -712,7 +693,11 @@ app.get("/api/site.webmanifest", async (c) => {
       background_color: bg,
       theme_color: bg,
       icons: [
-        { src: "/api/app-icon/192", sizes: settings.iconUrl ? "192x192" : "any", type: settings.iconUrl ? "image/png" : "image/svg+xml" },
+        {
+          src: "/api/app-icon/192",
+          sizes: settings.iconUrl ? "192x192" : "any",
+          type: settings.iconUrl ? "image/png" : "image/svg+xml",
+        },
         {
           src: "/api/app-icon/512",
           sizes: settings.iconUrl ? "512x512" : "any",
@@ -869,8 +854,14 @@ app.get("/api/mail", async (c) => {
 app.put("/api/mail/:id", async (c) => {
   const d = draftSchema.parse(await c.req.json());
   const addresses = mailAddresses(c.env.MAIL_DOMAIN);
-  if (!addresses.inbox || ![addresses.inbox, addresses.noReply].includes(d.sender))
-    return c.json({ error: "Remetente inválido ou domínio de e-mail não configurado." }, 400);
+  if (
+    !addresses.inbox ||
+    ![addresses.inbox, addresses.noReply].includes(d.sender)
+  )
+    return c.json(
+      { error: "Remetente inválido ou domínio de e-mail não configurado." },
+      400,
+    );
   if (d.id !== c.req.param("id"))
     return c.json({ error: "Identificador inválido." }, 400);
   const result = await c.env.DB.prepare(
@@ -994,7 +985,10 @@ app.post("/api/mail/:id/send", async (c) => {
   if (!row.subject.trim() || !row.body.trim())
     return c.json({ error: "Preencha assunto e mensagem." }, 400);
   const addresses = mailAddresses(c.env.MAIL_DOMAIN);
-  if (!addresses.inbox || ![addresses.inbox, addresses.noReply].includes(row.sender))
+  if (
+    !addresses.inbox ||
+    ![addresses.inbox, addresses.noReply].includes(row.sender)
+  )
     return c.json({ error: "Remetente inválido." }, 400);
   if (!row.send_payload) {
     const settings = await c.env.DB.prepare(
@@ -1034,9 +1028,7 @@ app.post("/api/mail/:id/send", async (c) => {
                 uploadedLogo.httpMetadata?.contentType || "image/png",
             },
           })
-        : await c.env.ASSETS.fetch(
-            new Request(`${c.env.APP_ORIGIN}/logo.svg`),
-          );
+        : await c.env.ASSETS.fetch(new Request(`${c.env.APP_ORIGIN}/logo.svg`));
       if (!logo.ok || !logo.headers.get("content-type")?.startsWith("image/")) {
         return c.json(
           {
