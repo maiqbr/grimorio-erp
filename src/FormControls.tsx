@@ -7,6 +7,7 @@ import {
   type PointerEvent,
   type TextareaHTMLAttributes,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   CalendarDays,
   Check,
@@ -18,7 +19,7 @@ import {
 
 type SegmentedOption<T extends string> = { value: T; label: string };
 
-function useFieldPopup() {
+function useFieldPopup(floatingRef?: { current: HTMLDivElement | null }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
@@ -27,7 +28,11 @@ function useFieldPopup() {
   useEffect(() => {
     if (!open) return;
     const dismiss = (event: globalThis.PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+      if (
+        !rootRef.current?.contains(event.target as Node) &&
+        !floatingRef?.current?.contains(event.target as Node)
+      )
+        setOpen(false);
     };
     document.addEventListener("pointerdown", dismiss);
     return () => document.removeEventListener("pointerdown", dismiss);
@@ -62,22 +67,59 @@ export function SelectField<T extends string>({
   value,
   options,
   onChange,
+  disabled = false,
+  compact = false,
+  hideLabel = false,
 }: {
   label: string;
   value: T;
   options: readonly SegmentedOption<T>[];
   onChange: (value: T) => void;
+  disabled?: boolean;
+  compact?: boolean;
+  hideLabel?: boolean;
 }) {
-  const popup = useFieldPopup();
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const popup = useFieldPopup(popoverRef);
   const selected = options.find((option) => option.value === value);
+  const [popoverStyle, setPopoverStyle] = useState<CSSProperties>({});
+
+  useEffect(() => {
+    if (!popup.open) return;
+    const position = () => {
+      const rect = popup.triggerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const width = Math.min(Math.max(rect.width, 180), window.innerWidth - 16);
+      setPopoverStyle({
+        position: "fixed",
+        width,
+        minWidth: width,
+        left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
+        top: popup.above ? rect.top - 6 : rect.bottom + 6,
+        transform: popup.above ? "translateY(-100%)" : undefined,
+      });
+    };
+    position();
+    window.addEventListener("resize", position);
+    window.addEventListener("scroll", position, true);
+    return () => {
+      window.removeEventListener("resize", position);
+      window.removeEventListener("scroll", position, true);
+    };
+  }, [popup.open, popup.above]);
+
+  useEffect(() => {
+    if (popup.open)
+      popoverRef.current?.querySelector<HTMLElement>(".active")?.focus();
+  }, [popup.open]);
 
   return (
     <div
-      className="picker-field"
+      className={`picker-field${compact ? " is-compact" : ""}${popup.open ? " is-open" : ""}`}
       ref={popup.rootRef}
       onKeyDown={popup.onKeyDown}
     >
-      <span className="picker-label">{label}</span>
+      {!hideLabel && <span className="picker-label">{label}</span>}
       <button
         ref={popup.triggerRef}
         type="button"
@@ -85,35 +127,69 @@ export function SelectField<T extends string>({
         aria-label={label}
         aria-haspopup="listbox"
         aria-expanded={popup.open}
+        disabled={disabled}
         onClick={() => popup.toggle(260)}
       >
         <span>{selected?.label || options[0]?.label || ""}</span>
         <ChevronDown size={17} aria-hidden="true" />
       </button>
-      {popup.open && (
-        <div
-          className={`field-popover select-popover${popup.above ? " above" : ""}`}
-          role="listbox"
-          aria-label={label}
-        >
-          {options.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              role="option"
-              aria-selected={option.value === value}
-              className={option.value === value ? "active" : ""}
-              onClick={() => {
-                onChange(option.value);
+      {popup.open &&
+        createPortal(
+          <div
+            ref={popoverRef}
+            className="field-popover select-popover"
+            role="listbox"
+            aria-label={label}
+            style={popoverStyle}
+            onKeyDown={(event) => {
+              if (event.key === "Tab") {
                 popup.close();
-              }}
-            >
-              <span>{option.label}</span>
-              {option.value === value && <Check size={16} aria-hidden="true" />}
-            </button>
-          ))}
-        </div>
-      )}
+                return;
+              }
+              if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key))
+                return;
+              event.preventDefault();
+              const buttons = Array.from(
+                popoverRef.current?.querySelectorAll<HTMLButtonElement>(
+                  "button",
+                ) || [],
+              );
+              const current = buttons.indexOf(
+                document.activeElement as HTMLButtonElement,
+              );
+              const next =
+                event.key === "Home"
+                  ? 0
+                  : event.key === "End"
+                    ? buttons.length - 1
+                    : (current +
+                        (event.key === "ArrowDown" ? 1 : -1) +
+                        buttons.length) %
+                      buttons.length;
+              buttons[next]?.focus();
+            }}
+          >
+            {options.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                role="option"
+                aria-selected={option.value === value}
+                className={option.value === value ? "active" : ""}
+                onClick={() => {
+                  onChange(option.value);
+                  popup.close();
+                }}
+              >
+                <span>{option.label}</span>
+                {option.value === value && (
+                  <Check size={16} aria-hidden="true" />
+                )}
+              </button>
+            ))}
+          </div>,
+          popup.rootRef.current?.closest(".app") || document.body,
+        )}
     </div>
   );
 }

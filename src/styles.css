@@ -188,7 +188,9 @@ input[type="checkbox"] {
   border-radius: 99px;
   background: var(--tone-302820, #302820);
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 input[type="checkbox"]::before {
   content: "";
@@ -200,7 +202,9 @@ input[type="checkbox"]::before {
   border-radius: 50%;
   background: var(--tone-c9bfb4, #c9bfb4);
   box-shadow: 0 1px 3px #0005;
-  transition: transform 0.2s ease, background 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
 }
 input[type="checkbox"]:checked {
   border-color: var(--accent);
@@ -1109,10 +1113,9 @@ h1 {
   align-items: center;
   gap: 12px;
 }
-.filters select,
-.toolbar > select {
-  width: auto;
-  max-width: 230px;
+.filters > .picker-field,
+.toolbar > .picker-field {
+  width: min(230px, 100%);
 }
 .projects-dashboard {
   display: flex;
@@ -1762,9 +1765,10 @@ h1 {
   align-items: center;
   gap: 5px;
 }
-.kanban-card select {
-  font-size: 10px;
-  padding: 7px;
+.kanban-card > .picker-field {
+  margin-top: 4px;
+}
+.kanban-card .picker-trigger {
   background: var(--tone-1e1914, #1e1914);
   color: var(--tone-a99780, #a99780);
 }
@@ -2246,9 +2250,6 @@ h1 {
   line-height: 1.65;
   margin: 9px 0 15px;
 }
-.appearance-language select {
-  width: 100%;
-}
 .theme-editor {
   padding: 0 24px 22px;
 }
@@ -2635,6 +2636,18 @@ h1 {
   gap: 9px;
   min-width: 0;
 }
+.picker-field.is-compact {
+  gap: 0;
+}
+.picker-field.is-compact .picker-trigger {
+  min-height: 37px;
+  padding: 7px 10px;
+  font-size: 11px;
+}
+.picker-trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
 .picker-label {
   display: flex;
   align-items: baseline;
@@ -2657,9 +2670,13 @@ h1 {
   border: 1px solid var(--border);
   border-radius: 11px;
   background: var(--theme-field, var(--tone-1b1612, #1b1612));
-  box-shadow: inset 0 1px #ffffff0b, 0 5px 14px #0002;
+  box-shadow:
+    inset 0 1px #ffffff0b,
+    0 5px 14px #0002;
   color: var(--theme-text, #e9e2d7);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 .picker-trigger {
   text-align: left;
@@ -2737,7 +2754,9 @@ h1 {
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--theme-surface, var(--tone-201a15, #201a15));
-  box-shadow: 0 18px 48px #0009, inset 0 1px #ffffff12;
+  box-shadow:
+    0 18px 48px #0009,
+    inset 0 1px #ffffff12;
 }
 .field-popover.above {
   top: auto;
@@ -2748,6 +2767,9 @@ h1 {
   max-height: min(270px, 45dvh);
   overflow-y: auto;
   scrollbar-width: thin;
+}
+.select-popover {
+  z-index: 90;
 }
 .field-popover button {
   width: 100%;
@@ -2886,7 +2908,10 @@ h1 {
   background: var(--accent-bg);
   box-shadow: 0 3px 12px #0004;
   pointer-events: none;
-  transition: left 0.22s ease, background 0.22s ease, border-color 0.22s ease;
+  transition:
+    left 0.22s ease,
+    background 0.22s ease,
+    border-color 0.22s ease;
 }
 .segmented-control[data-tone="priority"][data-value="low"] .segmented-thumb {
   background: #32624b;
@@ -4085,6 +4110,8 @@ h1 {
 }
 .password-range-label {
   display: flex;
+  flex-direction: row;
+  align-items: center;
   justify-content: space-between;
   color: var(--muted);
   font-size: 11px;
@@ -4092,22 +4119,90 @@ h1 {
 }
 .password-range-label strong {
   color: var(--accent);
+  min-width: 34px;
+  text-align: center;
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--accent-bg);
+  font-variant-numeric: tabular-nums;
 }
 .password-generator input[type="range"] {
+  display: block;
   width: 100%;
-  accent-color: var(--accent);
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  appearance: none;
+  cursor: pointer;
+}
+.password-generator input[type="range"]::-webkit-slider-runnable-track {
+  height: 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--accent) var(--range-progress),
+    var(--theme-field, var(--tone-1b1612, #1b1612)) var(--range-progress)
+  );
+}
+.password-generator input[type="range"]::-moz-range-track {
+  height: 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--accent) var(--range-progress),
+    var(--theme-field, var(--tone-1b1612, #1b1612)) var(--range-progress)
+  );
+}
+.password-generator input[type="range"]::-webkit-slider-thumb {
+  width: 20px;
+  height: 20px;
+  margin-top: -7px;
+  border: 3px solid var(--theme-surface, var(--tone-201a15, #201a15));
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 3px 10px #0007;
+  appearance: none;
+}
+.password-generator input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 3px solid var(--theme-surface, var(--tone-201a15, #201a15));
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 3px 10px #0007;
+}
+.password-generator input[type="range"]:hover::-webkit-slider-thumb,
+.password-generator input[type="range"]:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 4px var(--accent-bg),
+    0 3px 10px #0007;
+}
+.password-generator input[type="range"]:hover::-moz-range-thumb,
+.password-generator input[type="range"]:focus-visible::-moz-range-thumb {
+  box-shadow:
+    0 0 0 4px var(--accent-bg),
+    0 3px 10px #0007;
+}
+.password-range-bounds {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
 }
 .password-symbols {
   margin-top: 12px;
-}
-.password-key-size {
-  display: grid;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 11px;
-}
-.password-key-size select {
-  width: 100%;
 }
 .password-generated {
   display: flex;
@@ -4197,6 +4292,9 @@ h1 {
 .password-editor select {
   width: 100%;
   font-size: 13px;
+}
+.password-editor input[type="checkbox"] {
+  width: 38px;
 }
 .password-editor-value {
   display: flex;

@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import {
   Check,
   Copy,
@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { api } from "./lib";
 import { translate } from "./i18n";
-import { ResizableTextarea } from "./FormControls";
+import { ResizableTextarea, SelectField } from "./FormControls";
 import type { Settings, VaultItem } from "./types";
 
 type Draft = Pick<
@@ -489,9 +489,7 @@ export default function PasswordsPage({
             <Sparkles size={19} />
           </div>
           <h2>{tr("Gerador seguro")}</h2>
-          <p>
-            {tr("Gere uma senha ou chave aleatória.")}
-          </p>
+          <p>{tr("Gere uma senha ou chave aleatória.")}</p>
           <div className="password-generator-kind">
             <button
               className={generatorKind === "password" ? "active" : ""}
@@ -514,18 +512,33 @@ export default function PasswordsPage({
           </div>
           {generatorKind === "password" ? (
             <>
-              <label className="password-range-label">
-                {tr("Comprimento")} <strong>{passwordLength}</strong>
-              </label>
-              <input
-                type="range"
-                min="12"
-                max="64"
-                value={passwordLength}
-                onChange={(event) =>
-                  setPasswordLength(Number(event.target.value))
-                }
-              />
+              <div className="password-range-field">
+                <label
+                  className="password-range-label"
+                  htmlFor="password-length"
+                >
+                  {tr("Comprimento")} <strong>{passwordLength}</strong>
+                </label>
+                <input
+                  id="password-length"
+                  type="range"
+                  min="12"
+                  max="64"
+                  value={passwordLength}
+                  style={
+                    {
+                      "--range-progress": `${((passwordLength - 12) / 52) * 100}%`,
+                    } as CSSProperties
+                  }
+                  onChange={(event) =>
+                    setPasswordLength(Number(event.target.value))
+                  }
+                />
+                <div className="password-range-bounds" aria-hidden="true">
+                  <span>12</span>
+                  <span>64</span>
+                </div>
+              </div>
               <label className="checkbox-label password-symbols">
                 <input
                   type="checkbox"
@@ -537,17 +550,16 @@ export default function PasswordsPage({
               </label>
             </>
           ) : (
-            <label className="password-key-size">
-              {tr("Tamanho da chave")}
-              <select
-                value={keyBytes}
-                onChange={(event) => setKeyBytes(Number(event.target.value))}
-              >
-                <option value={16}>128 bits</option>
-                <option value={32}>256 bits</option>
-                <option value={64}>512 bits</option>
-              </select>
-            </label>
+            <SelectField
+              label={tr("Tamanho da chave")}
+              value={String(keyBytes)}
+              options={[
+                { value: "16", label: "128 bits" },
+                { value: "32", label: "256 bits" },
+                { value: "64", label: "512 bits" },
+              ]}
+              onChange={(bytes) => setKeyBytes(Number(bytes))}
+            />
           )}
           <div className="password-generated">
             <code>
@@ -660,21 +672,15 @@ export default function PasswordsPage({
                     placeholder={tr("Ex.: Minha conta principal")}
                   />
                 </label>
-                <label>
-                  {tr("Tipo")}
-                  <select
-                    value={draft.kind}
-                    onChange={(event) =>
-                      setDraft({
-                        ...draft,
-                        kind: event.target.value as Draft["kind"],
-                      })
-                    }
-                  >
-                    <option value="password">{tr("Senha")}</option>
-                    <option value="key">{tr("Chave")}</option>
-                  </select>
-                </label>
+                <SelectField
+                  label={tr("Tipo")}
+                  value={draft.kind}
+                  options={[
+                    { value: "password", label: tr("Senha") },
+                    { value: "key", label: tr("Chave") },
+                  ]}
+                  onChange={(kind) => setDraft({ ...draft, kind })}
+                />
                 <label>
                   {tr("Usuário ou e-mail")}
                   <input

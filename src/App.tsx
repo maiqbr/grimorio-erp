@@ -159,9 +159,7 @@ function SignaturePreview({
 }) {
   return (
     <div className={`signature-preview${small ? " small" : ""}`}>
-      {showLogo && (
-        <img src={settings.logoUrl || "/logo.svg"} alt="Grimório" />
-      )}
+      {showLogo && <img src={settings.logoUrl || "/logo.svg"} alt="Grimório" />}
       <div className="signature-text">{text}</div>
     </div>
   );
@@ -1175,18 +1173,20 @@ export default function App() {
   }
   function projectSelect() {
     return (
-      <select
-        aria-label={tr("Filtrar projeto")}
+      <SelectField
+        label={tr("Filtrar projeto")}
         value={projectFilter}
-        onChange={(e) => setProjectFilter(e.target.value)}
-      >
-        <option value="">{tr("Todos os projetos")}</option>
-        {projects.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.title}
-          </option>
-        ))}
-      </select>
+        options={[
+          { value: "", label: tr("Todos os projetos") },
+          ...projects.map((project) => ({
+            value: project.id,
+            label: project.title,
+          })),
+        ]}
+        onChange={setProjectFilter}
+        compact
+        hideLabel
+      />
     );
   }
   function calendar() {
@@ -1367,10 +1367,7 @@ export default function App() {
             navigate("today");
           }}
         >
-          <img
-            src={settings.logoUrl || "/logo.svg"}
-            alt="Grimório"
-          />
+          <img src={settings.logoUrl || "/logo.svg"} alt="Grimório" />
           <span>{tr("WORKSPACE")}</span>
         </a>
         <div className="workspace-label">
@@ -1981,21 +1978,21 @@ export default function App() {
                                         className={`priority-${t.priority}`}
                                       />
                                     </footer>
-                                    <select
-                                      aria-label={`${tr("Mover")} ${t.title}`}
+                                    <SelectField
+                                      label={`${tr("Mover")} ${t.title}`}
                                       value={t.status}
-                                      onChange={(e) =>
+                                      options={columns.map((column) => ({
+                                        value: column,
+                                        label: tr(column),
+                                      }))}
+                                      onChange={(status) =>
                                         void perform(() =>
-                                          moveKanbanTask(t, e.target.value),
+                                          moveKanbanTask(t, status),
                                         )
                                       }
-                                    >
-                                      {columns.map((c) => (
-                                        <option key={c} value={c}>
-                                          {tr(c)}
-                                        </option>
-                                      ))}
-                                    </select>
+                                      compact
+                                      hideLabel
+                                    />
                                   </article>
                                 ))}
                                 {!ts.length && (
@@ -2079,7 +2076,9 @@ export default function App() {
                                 {tr("Panorama dos projetos")}
                               </h2>
                               <p className="panel-subtitle">
-                                {tr("Selecione um projeto para ver as tarefas.")}
+                                {tr(
+                                  "Selecione um projeto para ver as tarefas.",
+                                )}
                               </p>
                             </div>
                           </div>
@@ -2261,10 +2260,12 @@ export default function App() {
                       ))}
                       <div className="mail-identity">
                         <i className="dot violet" />
-                        {status.mailAddresses.inbox || tr("E-mail não configurado")}
+                        {status.mailAddresses.inbox ||
+                          tr("E-mail não configurado")}
                         <small>{tr("Envio e recebimento")}</small>
                         <i className="dot gold" />
-                        {status.mailAddresses.noReply || tr("E-mail não configurado")}
+                        {status.mailAddresses.noReply ||
+                          tr("E-mail não configurado")}
                         <small>{tr("Somente envio")}</small>
                       </div>
                     </aside>
@@ -2692,27 +2693,28 @@ export default function App() {
                           "Escolha o idioma da interface. Seus dados continuam como você escreveu.",
                         )}
                       </p>
-                      <select
-                        aria-label={tr("Idioma da interface")}
+                      <SelectField
+                        label={tr("Idioma da interface")}
                         value={settings.language || "pt-BR"}
                         disabled={busy}
-                        onChange={(event) =>
+                        options={[
+                          { value: "pt-BR", label: tr("Português") },
+                          { value: "en", label: tr("English") },
+                          { value: "es", label: tr("Español") },
+                        ]}
+                        onChange={(language) =>
                           void perform(() =>
                             savePreferences(
                               {
                                 ...settings,
-                                language: event.target
-                                  .value as Settings["language"],
+                                language: language as Settings["language"],
                               },
                               "Idioma atualizado.",
                             ),
                           )
                         }
-                      >
-                        <option value="pt-BR">{tr("Português")}</option>
-                        <option value="en">{tr("English")}</option>
-                        <option value="es">{tr("Español")}</option>
-                      </select>
+                        hideLabel
+                      />
                     </div>
                   </section>
                   <section className="panel settings-panel">
@@ -3245,13 +3247,18 @@ export default function App() {
                       value={editor.projectId}
                       options={[
                         { value: "", label: tr("Pessoal / sem projeto") },
-                        ...projects.map((project) => ({ value: project.id, label: project.title })),
+                        ...projects.map((project) => ({
+                          value: project.id,
+                          label: project.title,
+                        })),
                       ]}
                       onChange={(projectId) =>
                         setEditor({
                           ...editor,
                           projectId,
-                          status: projects.find((project) => project.id === projectId)?.columns[0] || defaultColumns[0],
+                          status:
+                            projects.find((project) => project.id === projectId)
+                              ?.columns[0] || defaultColumns[0],
                         })
                       }
                     />
@@ -3260,22 +3267,44 @@ export default function App() {
                     <SelectField
                       label={tr("Etapa")}
                       value={editor.status}
-                      options={(projects.find((project) => project.id === editor.projectId)?.columns || defaultColumns).map((column) => ({ value: column, label: tr(column) }))}
+                      options={(
+                        projects.find(
+                          (project) => project.id === editor.projectId,
+                        )?.columns || defaultColumns
+                      ).map((column) => ({ value: column, label: tr(column) }))}
                       onChange={(status) => setEditor({ ...editor, status })}
                     />
                   )}
-                  <DateField label={tr("Prazo")} value={editor.due} onChange={(due) => setEditor({ ...editor, due, time: due ? editor.time : "" })} />
-                  <TimeField label={tr("Horário")} optional value={editor.time || ""} disabled={!editor.due} onChange={(time) => setEditor({ ...editor, time })} />
+                  <DateField
+                    label={tr("Prazo")}
+                    value={editor.due}
+                    onChange={(due) =>
+                      setEditor({
+                        ...editor,
+                        due,
+                        time: due ? editor.time : "",
+                      })
+                    }
+                  />
+                  <TimeField
+                    label={tr("Horário")}
+                    optional
+                    value={editor.time || ""}
+                    disabled={!editor.due}
+                    onChange={(time) => setEditor({ ...editor, time })}
+                  />
                 </div>
                 <SegmentedControl
                   label={tr("Prioridade")}
                   value={editor.priority}
                   tone="priority"
-                  options={([
-                    { value: "low", label: tr("Baixa") },
-                    { value: "medium", label: tr("Normal") },
-                    { value: "high", label: tr("Alta") },
-                  ] as const)}
+                  options={
+                    [
+                      { value: "low", label: tr("Baixa") },
+                      { value: "medium", label: tr("Normal") },
+                      { value: "high", label: tr("Alta") },
+                    ] as const
+                  }
                   onChange={(priority) => setEditor({ ...editor, priority })}
                 />
                 <label>
@@ -3302,12 +3331,14 @@ export default function App() {
                 <SegmentedControl
                   label={tr("Repetir após concluir")}
                   value={editor.repeat}
-                  options={([
-                    { value: "none", label: tr("Não repetir") },
-                    { value: "daily", label: tr("Diariamente") },
-                    { value: "weekly", label: tr("Semanalmente") },
-                    { value: "monthly", label: tr("Mensalmente") },
-                  ] as const)}
+                  options={
+                    [
+                      { value: "none", label: tr("Não repetir") },
+                      { value: "daily", label: tr("Diariamente") },
+                      { value: "weekly", label: tr("Semanalmente") },
+                      { value: "monthly", label: tr("Mensalmente") },
+                    ] as const
+                  }
                   onChange={(repeat) => setEditor({ ...editor, repeat })}
                 />
                 <div className="checklist-editor">
@@ -3444,10 +3475,25 @@ export default function App() {
             )}
             {editor.kind === "event" && (
               <>
-                <DateField label={tr("Data")} required value={editor.date} onChange={(date) => setEditor({ ...editor, date })} />
+                <DateField
+                  label={tr("Data")}
+                  required
+                  value={editor.date}
+                  onChange={(date) => setEditor({ ...editor, date })}
+                />
                 <div className="form-grid">
-                  <TimeField label={tr("Início")} required value={editor.time} onChange={(time) => setEditor({ ...editor, time })} />
-                  <TimeField label={tr("Término")} required value={editor.endTime} onChange={(endTime) => setEditor({ ...editor, endTime })} />
+                  <TimeField
+                    label={tr("Início")}
+                    required
+                    value={editor.time}
+                    onChange={(time) => setEditor({ ...editor, time })}
+                  />
+                  <TimeField
+                    label={tr("Término")}
+                    required
+                    value={editor.endTime}
+                    onChange={(endTime) => setEditor({ ...editor, endTime })}
+                  />
                 </div>
                 <label>
                   {tr("Detalhes")}
@@ -3468,7 +3514,10 @@ export default function App() {
                   value={editor.projectId}
                   options={[
                     { value: "", label: tr("Nota pessoal") },
-                    ...projects.map((project) => ({ value: project.id, label: project.title })),
+                    ...projects.map((project) => ({
+                      value: project.id,
+                      label: project.title,
+                    })),
                   ]}
                   onChange={(projectId) => setEditor({ ...editor, projectId })}
                 />
@@ -3509,7 +3558,11 @@ export default function App() {
               </button>
               <button
                 className="primary"
-                disabled={busy || (editor.kind === "event" && (!editor.date || !editor.time || !editor.endTime))}
+                disabled={
+                  busy ||
+                  (editor.kind === "event" &&
+                    (!editor.date || !editor.time || !editor.endTime))
+                }
               >
                 <Check size={16} />
                 {tr(busy ? "Salvando…" : "Salvar")}
@@ -3662,20 +3715,25 @@ export default function App() {
               });
             }}
           >
-            <label>
-              {tr("De")}
-              <select
-                disabled={compose.send_state === "pending"}
-                value={compose.sender}
-                onChange={(e) => {
-                  setCompose({ ...compose, sender: e.target.value });
-                  setComposeDirty(true);
-                }}
-              >
-                <option value={status.mailAddresses.inbox}>{status.mailAddresses.inbox}</option>
-                <option value={status.mailAddresses.noReply}>{status.mailAddresses.noReply}</option>
-              </select>
-            </label>
+            <SelectField
+              label={tr("De")}
+              disabled={compose.send_state === "pending"}
+              value={compose.sender}
+              options={[
+                {
+                  value: status.mailAddresses.inbox,
+                  label: status.mailAddresses.inbox,
+                },
+                {
+                  value: status.mailAddresses.noReply,
+                  label: status.mailAddresses.noReply,
+                },
+              ]}
+              onChange={(sender) => {
+                setCompose({ ...compose, sender });
+                setComposeDirty(true);
+              }}
+            />
             <label>
               {tr("Para")}
               <input
