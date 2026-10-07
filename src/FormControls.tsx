@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -38,7 +39,7 @@ function useFieldPopup(floatingRef?: { current: HTMLDivElement | null }) {
     return () => document.removeEventListener("pointerdown", dismiss);
   }, [open]);
 
-  const toggle = (height: number) => {
+  const toggle = (height = 0) => {
     if (!open && rootRef.current) {
       setAbove(
         rootRef.current.getBoundingClientRect().bottom + height >
@@ -84,19 +85,29 @@ export function SelectField<T extends string>({
   const selected = options.find((option) => option.value === value);
   const [popoverStyle, setPopoverStyle] = useState<CSSProperties>({});
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!popup.open) return;
     const position = () => {
       const rect = popup.triggerRef.current?.getBoundingClientRect();
       if (!rect) return;
       const width = Math.min(Math.max(rect.width, 180), window.innerWidth - 16);
+      const desiredHeight = Math.min(
+        options.length * 36 + 12,
+        270,
+        window.innerHeight * 0.45,
+      );
+      const spaceBelow = window.innerHeight - rect.bottom - 12;
+      const spaceAbove = rect.top - 12;
+      const above = spaceBelow < desiredHeight && spaceAbove > spaceBelow;
+      const availableHeight = above ? spaceAbove : spaceBelow;
       setPopoverStyle({
         position: "fixed",
         width,
         minWidth: width,
         left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
-        top: popup.above ? rect.top - 6 : rect.bottom + 6,
-        transform: popup.above ? "translateY(-100%)" : undefined,
+        top: above ? rect.top - 6 : rect.bottom + 6,
+        maxHeight: Math.max(36, availableHeight),
+        transform: above ? "translateY(-100%)" : undefined,
       });
     };
     position();
@@ -106,11 +117,13 @@ export function SelectField<T extends string>({
       window.removeEventListener("resize", position);
       window.removeEventListener("scroll", position, true);
     };
-  }, [popup.open, popup.above]);
+  }, [popup.open, options.length]);
 
   useEffect(() => {
     if (popup.open)
-      popoverRef.current?.querySelector<HTMLElement>(".active")?.focus();
+      popoverRef.current
+        ?.querySelector<HTMLElement>(".active")
+        ?.focus({ preventScroll: true });
   }, [popup.open]);
 
   return (
@@ -128,7 +141,7 @@ export function SelectField<T extends string>({
         aria-haspopup="listbox"
         aria-expanded={popup.open}
         disabled={disabled}
-        onClick={() => popup.toggle(260)}
+        onClick={() => popup.toggle()}
       >
         <span>{selected?.label || options[0]?.label || ""}</span>
         <ChevronDown size={17} aria-hidden="true" />

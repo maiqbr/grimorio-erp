@@ -2787,6 +2787,10 @@ h1 {
   padding: 8px 11px;
   text-align: left;
 }
+.select-popover button > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .field-popover button:hover,
 .field-popover button.active {
   background: var(--accent-bg);
