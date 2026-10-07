@@ -83,7 +83,8 @@ export function SelectField<T extends string>({
   const popoverRef = useRef<HTMLDivElement>(null);
   const popup = useFieldPopup(popoverRef);
   const selected = options.find((option) => option.value === value);
-  const [popoverStyle, setPopoverStyle] = useState<CSSProperties>({});
+  const [popoverStyle, setPopoverStyle] = useState<CSSProperties | null>(null);
+  const positioned = popoverStyle !== null;
 
   useLayoutEffect(() => {
     if (!popup.open) return;
@@ -120,11 +121,11 @@ export function SelectField<T extends string>({
   }, [popup.open, options.length]);
 
   useEffect(() => {
-    if (popup.open)
+    if (popup.open && positioned)
       popoverRef.current
         ?.querySelector<HTMLElement>(".active")
         ?.focus({ preventScroll: true });
-  }, [popup.open]);
+  }, [popup.open, positioned]);
 
   return (
     <div
@@ -141,12 +142,16 @@ export function SelectField<T extends string>({
         aria-haspopup="listbox"
         aria-expanded={popup.open}
         disabled={disabled}
-        onClick={() => popup.toggle()}
+        onClick={() => {
+          setPopoverStyle(null);
+          popup.toggle();
+        }}
       >
         <span>{selected?.label || options[0]?.label || ""}</span>
         <ChevronDown size={17} aria-hidden="true" />
       </button>
       {popup.open &&
+        popoverStyle &&
         createPortal(
           <div
             ref={popoverRef}
