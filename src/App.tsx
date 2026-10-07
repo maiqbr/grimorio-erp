@@ -53,7 +53,13 @@ import {
 } from "./theme";
 import { translate } from "./i18n";
 import PasswordsPage from "./PasswordsPage";
-import { ResizableTextarea, SegmentedControl } from "./FormControls";
+import {
+  DateField,
+  ResizableTextarea,
+  SegmentedControl,
+  SelectField,
+  TimeField,
+} from "./FormControls";
 import {
   defaultColumns,
   defaultSettings,
@@ -3234,78 +3240,32 @@ export default function App() {
               <>
                 <div className="form-grid">
                   {(editor.projectId || page === "projects") && (
-                    <label>
-                      {tr("Projeto")}
-                      <select
-                        value={editor.projectId}
-                        onChange={(e) =>
-                          setEditor({
-                            ...editor,
-                            projectId: e.target.value,
-                            status:
-                              projects.find((p) => p.id === e.target.value)
-                                ?.columns[0] || defaultColumns[0],
-                          })
-                        }
-                      >
-                        <option value="">{tr("Pessoal / sem projeto")}</option>
-                        {projects.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.title}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                    <SelectField
+                      label={tr("Projeto")}
+                      value={editor.projectId}
+                      options={[
+                        { value: "", label: tr("Pessoal / sem projeto") },
+                        ...projects.map((project) => ({ value: project.id, label: project.title })),
+                      ]}
+                      onChange={(projectId) =>
+                        setEditor({
+                          ...editor,
+                          projectId,
+                          status: projects.find((project) => project.id === projectId)?.columns[0] || defaultColumns[0],
+                        })
+                      }
+                    />
                   )}
                   {(editor.projectId || page === "projects") && (
-                    <label>
-                      {tr("Etapa")}
-                      <select
-                        value={editor.status}
-                        onChange={(e) =>
-                          setEditor({ ...editor, status: e.target.value })
-                        }
-                      >
-                        {(
-                          projects.find((p) => p.id === editor.projectId)
-                            ?.columns || defaultColumns
-                        ).map((c) => (
-                          <option key={c} value={c}>
-                            {tr(c)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                    <SelectField
+                      label={tr("Etapa")}
+                      value={editor.status}
+                      options={(projects.find((project) => project.id === editor.projectId)?.columns || defaultColumns).map((column) => ({ value: column, label: tr(column) }))}
+                      onChange={(status) => setEditor({ ...editor, status })}
+                    />
                   )}
-                  <label className="date-time-field">
-                    {tr("Prazo")}
-                    <span className="date-time-control">
-                      <CalendarDays size={17} aria-hidden="true" />
-                      <input
-                        type="date"
-                        value={editor.due}
-                        onChange={(e) =>
-                          setEditor({ ...editor, due: e.target.value })
-                        }
-                      />
-                    </span>
-                  </label>
-                  <label className="date-time-field">
-                    <span className="date-time-caption">
-                      {tr("Horário")} <small className="field-help">{tr("opcional")}</small>
-                    </span>
-                    <span className="date-time-control">
-                      <Clock3 size={17} aria-hidden="true" />
-                      <input
-                        type="time"
-                        value={editor.time || ""}
-                        disabled={!editor.due}
-                        onChange={(e) =>
-                          setEditor({ ...editor, time: e.target.value })
-                        }
-                      />
-                    </span>
-                  </label>
+                  <DateField label={tr("Prazo")} value={editor.due} onChange={(due) => setEditor({ ...editor, due, time: due ? editor.time : "" })} />
+                  <TimeField label={tr("Horário")} optional value={editor.time || ""} disabled={!editor.due} onChange={(time) => setEditor({ ...editor, time })} />
                 </div>
                 <SegmentedControl
                   label={tr("Prioridade")}
@@ -3484,49 +3444,10 @@ export default function App() {
             )}
             {editor.kind === "event" && (
               <>
-                <label className="date-time-field">
-                  {tr("Data")}
-                  <span className="date-time-control">
-                    <CalendarDays size={17} aria-hidden="true" />
-                    <input
-                      type="date"
-                      required
-                      value={editor.date}
-                      onChange={(e) =>
-                        setEditor({ ...editor, date: e.target.value })
-                      }
-                    />
-                  </span>
-                </label>
+                <DateField label={tr("Data")} required value={editor.date} onChange={(date) => setEditor({ ...editor, date })} />
                 <div className="form-grid">
-                  <label className="date-time-field">
-                    {tr("Início")}
-                    <span className="date-time-control">
-                      <Clock3 size={17} aria-hidden="true" />
-                      <input
-                        type="time"
-                        required
-                        value={editor.time}
-                        onChange={(e) =>
-                          setEditor({ ...editor, time: e.target.value })
-                        }
-                      />
-                    </span>
-                  </label>
-                  <label className="date-time-field">
-                    {tr("Término")}
-                    <span className="date-time-control">
-                      <Clock3 size={17} aria-hidden="true" />
-                      <input
-                        type="time"
-                        required
-                        value={editor.endTime}
-                        onChange={(e) =>
-                          setEditor({ ...editor, endTime: e.target.value })
-                        }
-                      />
-                    </span>
-                  </label>
+                  <TimeField label={tr("Início")} required value={editor.time} onChange={(time) => setEditor({ ...editor, time })} />
+                  <TimeField label={tr("Término")} required value={editor.endTime} onChange={(endTime) => setEditor({ ...editor, endTime })} />
                 </div>
                 <label>
                   {tr("Detalhes")}
@@ -3542,22 +3463,15 @@ export default function App() {
             )}
             {editor.kind === "note" && (
               <>
-                <label>
-                  {tr("Projeto")}
-                  <select
-                    value={editor.projectId}
-                    onChange={(e) =>
-                      setEditor({ ...editor, projectId: e.target.value })
-                    }
-                  >
-                    <option value="">{tr("Nota pessoal")}</option>
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.title}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <SelectField
+                  label={tr("Projeto")}
+                  value={editor.projectId}
+                  options={[
+                    { value: "", label: tr("Nota pessoal") },
+                    ...projects.map((project) => ({ value: project.id, label: project.title })),
+                  ]}
+                  onChange={(projectId) => setEditor({ ...editor, projectId })}
+                />
                 <label>
                   {tr("Conteúdo")}
                   <ResizableTextarea
@@ -3593,7 +3507,10 @@ export default function App() {
               >
                 {tr("Cancelar")}
               </button>
-              <button className="primary" disabled={busy}>
+              <button
+                className="primary"
+                disabled={busy || (editor.kind === "event" && (!editor.date || !editor.time || !editor.endTime))}
+              >
                 <Check size={16} />
                 {tr(busy ? "Salvando…" : "Salvar")}
               </button>
