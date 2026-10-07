@@ -53,6 +53,7 @@ import {
 } from "./theme";
 import { translate } from "./i18n";
 import PasswordsPage from "./PasswordsPage";
+import { ResizableTextarea, SegmentedControl } from "./FormControls";
 import {
   defaultColumns,
   defaultSettings,
@@ -1758,7 +1759,7 @@ export default function App() {
                           <p>{tr("Escreva. Ele salva sozinho.")}</p>
                         </div>
                       </div>
-                      <textarea
+                      <ResizableTextarea
                         aria-label={tr("Bloco de notas rápido")}
                         value={quickNote}
                         onChange={(e) => updateQuickNote(e.target.value)}
@@ -2730,7 +2731,7 @@ export default function App() {
                     >
                       <label>
                         {tr("Texto da assinatura")}
-                        <textarea
+                        <ResizableTextarea
                           required
                           maxLength={5000}
                           rows={5}
@@ -2743,6 +2744,7 @@ export default function App() {
                       <label className="checkbox-label">
                         <input
                           type="checkbox"
+                          role="switch"
                           checked={signatureLogoDraft}
                           onChange={(event) =>
                             setSignatureLogoDraft(event.target.checked)
@@ -3275,50 +3277,50 @@ export default function App() {
                       </select>
                     </label>
                   )}
-                  <label>
+                  <label className="date-time-field">
                     {tr("Prazo")}
-                    <input
-                      type="date"
-                      value={editor.due}
-                      onChange={(e) =>
-                        setEditor({ ...editor, due: e.target.value })
-                      }
-                    />
+                    <span className="date-time-control">
+                      <CalendarDays size={17} aria-hidden="true" />
+                      <input
+                        type="date"
+                        value={editor.due}
+                        onChange={(e) =>
+                          setEditor({ ...editor, due: e.target.value })
+                        }
+                      />
+                    </span>
                   </label>
-                  <label>
-                    {tr("Horário")}{" "}
-                    <small className="field-help">{tr("opcional")}</small>
-                    <input
-                      type="time"
-                      value={editor.time || ""}
-                      disabled={!editor.due}
-                      onChange={(e) =>
-                        setEditor({ ...editor, time: e.target.value })
-                      }
-                    />
-                  </label>
-                  <label>
-                    {tr("Prioridade")}
-                    <select
-                      value={editor.priority}
-                      onChange={(e) =>
-                        setEditor({
-                          ...editor,
-                          priority: e.target.value as Task["priority"],
-                        })
-                      }
-                    >
-                      {Object.entries(priorities).map(([k, v]) => (
-                        <option key={k} value={k}>
-                          {tr(v)}
-                        </option>
-                      ))}
-                    </select>
+                  <label className="date-time-field">
+                    <span className="date-time-caption">
+                      {tr("Horário")} <small className="field-help">{tr("opcional")}</small>
+                    </span>
+                    <span className="date-time-control">
+                      <Clock3 size={17} aria-hidden="true" />
+                      <input
+                        type="time"
+                        value={editor.time || ""}
+                        disabled={!editor.due}
+                        onChange={(e) =>
+                          setEditor({ ...editor, time: e.target.value })
+                        }
+                      />
+                    </span>
                   </label>
                 </div>
+                <SegmentedControl
+                  label={tr("Prioridade")}
+                  value={editor.priority}
+                  tone="priority"
+                  options={([
+                    { value: "low", label: tr("Baixa") },
+                    { value: "medium", label: tr("Normal") },
+                    { value: "high", label: tr("Alta") },
+                  ] as const)}
+                  onChange={(priority) => setEditor({ ...editor, priority })}
+                />
                 <label>
                   {tr("Descrição")}
-                  <textarea
+                  <ResizableTextarea
                     rows={3}
                     value={editor.description}
                     onChange={(e) =>
@@ -3326,36 +3328,28 @@ export default function App() {
                     }
                   />
                 </label>
-                <div className="form-grid">
-                  <label>
-                    {tr("Etiquetas (separadas por vírgulas)")}
-                    <input
-                      maxLength={500}
-                      value={editor.tags}
-                      onChange={(e) =>
-                        setEditor({ ...editor, tags: e.target.value })
-                      }
-                      placeholder={tr("design, pessoal…")}
-                    />
-                  </label>
-                  <label>
-                    {tr("Repetir após concluir")}
-                    <select
-                      value={editor.repeat}
-                      onChange={(e) =>
-                        setEditor({
-                          ...editor,
-                          repeat: e.target.value as Task["repeat"],
-                        })
-                      }
-                    >
-                      <option value="none">{tr("Não repetir")}</option>
-                      <option value="daily">{tr("Diariamente")}</option>
-                      <option value="weekly">{tr("Semanalmente")}</option>
-                      <option value="monthly">{tr("Mensalmente")}</option>
-                    </select>
-                  </label>
-                </div>
+                <label>
+                  {tr("Etiquetas (separadas por vírgulas)")}
+                  <input
+                    maxLength={500}
+                    value={editor.tags}
+                    onChange={(e) =>
+                      setEditor({ ...editor, tags: e.target.value })
+                    }
+                    placeholder={tr("design, pessoal…")}
+                  />
+                </label>
+                <SegmentedControl
+                  label={tr("Repetir após concluir")}
+                  value={editor.repeat}
+                  options={([
+                    { value: "none", label: tr("Não repetir") },
+                    { value: "daily", label: tr("Diariamente") },
+                    { value: "weekly", label: tr("Semanalmente") },
+                    { value: "monthly", label: tr("Mensalmente") },
+                  ] as const)}
+                  onChange={(repeat) => setEditor({ ...editor, repeat })}
+                />
                 <div className="checklist-editor">
                   <h3>{tr("Passos da tarefa")}</h3>
                   {editor.checklist.map((c, i) => (
@@ -3363,6 +3357,7 @@ export default function App() {
                       <input
                         aria-label={`${tr("Concluir passo")} ${i + 1}`}
                         type="checkbox"
+                        role="switch"
                         checked={c.done}
                         onChange={(e) =>
                           setEditor({
@@ -3449,7 +3444,7 @@ export default function App() {
               <>
                 <label>
                   {tr("Descrição")}
-                  <textarea
+                  <ResizableTextarea
                     rows={3}
                     value={editor.description}
                     onChange={(e) =>
@@ -3469,7 +3464,7 @@ export default function App() {
                 </label>
                 <label>
                   {tr("Etapas do Kanban (uma por linha)")}
-                  <textarea
+                  <ResizableTextarea
                     rows={5}
                     value={editor.columns.join("\n")}
                     onChange={(e) =>
@@ -3489,44 +3484,53 @@ export default function App() {
             )}
             {editor.kind === "event" && (
               <>
-                <label>
+                <label className="date-time-field">
                   {tr("Data")}
-                  <input
-                    type="date"
-                    required
-                    value={editor.date}
-                    onChange={(e) =>
-                      setEditor({ ...editor, date: e.target.value })
-                    }
-                  />
+                  <span className="date-time-control">
+                    <CalendarDays size={17} aria-hidden="true" />
+                    <input
+                      type="date"
+                      required
+                      value={editor.date}
+                      onChange={(e) =>
+                        setEditor({ ...editor, date: e.target.value })
+                      }
+                    />
+                  </span>
                 </label>
                 <div className="form-grid">
-                  <label>
+                  <label className="date-time-field">
                     {tr("Início")}
-                    <input
-                      type="time"
-                      required
-                      value={editor.time}
-                      onChange={(e) =>
-                        setEditor({ ...editor, time: e.target.value })
-                      }
-                    />
+                    <span className="date-time-control">
+                      <Clock3 size={17} aria-hidden="true" />
+                      <input
+                        type="time"
+                        required
+                        value={editor.time}
+                        onChange={(e) =>
+                          setEditor({ ...editor, time: e.target.value })
+                        }
+                      />
+                    </span>
                   </label>
-                  <label>
+                  <label className="date-time-field">
                     {tr("Término")}
-                    <input
-                      type="time"
-                      required
-                      value={editor.endTime}
-                      onChange={(e) =>
-                        setEditor({ ...editor, endTime: e.target.value })
-                      }
-                    />
+                    <span className="date-time-control">
+                      <Clock3 size={17} aria-hidden="true" />
+                      <input
+                        type="time"
+                        required
+                        value={editor.endTime}
+                        onChange={(e) =>
+                          setEditor({ ...editor, endTime: e.target.value })
+                        }
+                      />
+                    </span>
                   </label>
                 </div>
                 <label>
                   {tr("Detalhes")}
-                  <textarea
+                  <ResizableTextarea
                     rows={4}
                     value={editor.description}
                     onChange={(e) =>
@@ -3556,7 +3560,7 @@ export default function App() {
                 </label>
                 <label>
                   {tr("Conteúdo")}
-                  <textarea
+                  <ResizableTextarea
                     rows={10}
                     value={editor.body}
                     onChange={(e) =>
@@ -3784,7 +3788,7 @@ export default function App() {
             </label>
             <label>
               {tr("Mensagem")}
-              <textarea
+              <ResizableTextarea
                 required
                 rows={8}
                 disabled={compose.send_state === "pending"}

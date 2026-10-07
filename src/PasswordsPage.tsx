@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { api } from "./lib";
 import { translate } from "./i18n";
+import { ResizableTextarea } from "./FormControls";
 import type { Settings, VaultItem } from "./types";
 
 type Draft = Pick<
@@ -528,6 +529,7 @@ export default function PasswordsPage({
               <label className="checkbox-label password-symbols">
                 <input
                   type="checkbox"
+                  role="switch"
                   checked={includeSymbols}
                   onChange={(event) => setIncludeSymbols(event.target.checked)}
                 />
@@ -738,7 +740,7 @@ export default function PasswordsPage({
               </label>
               <label>
                 {tr("Observações")}
-                <textarea
+                <ResizableTextarea
                   rows={3}
                   maxLength={20000}
                   value={draft.notes}
@@ -751,6 +753,7 @@ export default function PasswordsPage({
               <label className="checkbox-label">
                 <input
                   type="checkbox"
+                  role="switch"
                   checked={draft.favorite}
                   onChange={(event) =>
                     setDraft({ ...draft, favorite: event.target.checked })
