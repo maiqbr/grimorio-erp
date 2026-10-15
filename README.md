@@ -2,6 +2,8 @@
 
 O Grimório reúne tarefas, calendário, projetos, notas, senhas e e-mail em um espaço pessoal. A interface usa React e Vite. A API roda em Cloudflare Workers, com D1 para os registros e R2 para arquivos e backups.
 
+Para entender o código, localizar funcionalidades e manter o design, consulte o [guia do projeto](docs/GUIA-DO-PROJETO.md).
+
 ## Licença e finalidade
 
 Você pode ler o código e instalar o aplicativo para uso pessoal. A [licença](LICENSE.md) não permite uso comercial, alteração do código ou redistribuição. Por isso, o projeto não atende à [definição de código aberto da Open Source Initiative](https://opensource.org/osd).
